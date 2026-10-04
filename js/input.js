@@ -1,0 +1,6 @@
+export class Input{
+  constructor(canvas){this.keys=new Set();this.just=new Set();this.canvas=canvas;window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Tab'].includes(e.key))e.preventDefault();if(!this.keys.has(e.key))this.just.add(e.key);this.keys.add(e.key)});window.addEventListener('keyup',e=>this.keys.delete(e.key));this.mouse={x:0,y:0,down:false};canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect();this.mouse.x=(e.clientX-r.left)*(canvas.width/r.width);this.mouse.y=(e.clientY-r.top)*(canvas.height/r.height)});canvas.addEventListener('mousedown',()=>this.mouse.down=true);window.addEventListener('mouseup',()=>this.mouse.down=false)}
+  get up(){return this.keys.has('w')||this.keys.has('W')||this.keys.has('ArrowUp')} get down(){return this.keys.has('s')||this.keys.has('S')||this.keys.has('ArrowDown')} get left(){return this.keys.has('a')||this.keys.has('A')||this.keys.has('ArrowLeft')} get right(){return this.keys.has('d')||this.keys.has('D')||this.keys.has('ArrowRight')} get run(){return this.keys.has('Shift')}
+  consume(k){if(this.just.has(k)){this.just.delete(k);return true}return false}
+  clear(){this.just.clear()}
+}

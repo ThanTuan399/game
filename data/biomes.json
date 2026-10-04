@@ -1,0 +1,10 @@
+{
+  "plains":{"name":"Đồng bằng","climate":"tropical"},
+  "mountain":{"name":"Vùng núi","climate":"cool"},
+  "rice":{"name":"Đồng ruộng","climate":"monsoon"},
+  "riverside":{"name":"Ven sông","climate":"tropical"},
+  "beach":{"name":"Ven biển","climate":"tropical"},
+  "tropical":{"name":"Miền nhiệt đới","climate":"tropical"},
+  "forest":{"name":"Vùng rừng","climate":"cool"},
+  "valley":{"name":"Thung lũng","climate":"temperate"}
+}

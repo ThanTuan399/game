@@ -1,0 +1,12 @@
+[
+ {"id":"linh","name":"Linh","job":"người bán hạt giống","personality":"friendly"},
+ {"id":"tu","name":"Ông Tư","job":"nông dân","personality":"wise"},
+ {"id":"mai","name":"Mai","job":"chủ quán","personality":"cheerful"},
+ {"id":"nam","name":"Nam","job":"thợ mộc","personality":"calm"},
+ {"id":"nam5","name":"Bà Năm","job":"bán hàng","personality":"warm"},
+ {"id":"khoa","name":"Khoa","job":"người câu cá","personality":"quiet"},
+ {"id":"an","name":"An","job":"trẻ em","personality":"playful"},
+ {"id":"hung","name":"Hùng","job":"người giao hàng","personality":"energetic"},
+ {"id":"vy","name":"Vy","job":"người bán hoa","personality":"sweet"},
+ {"id":"binh","name":"Bình","job":"trưởng thị trấn","personality":"leader"}
+]

@@ -1,0 +1,10 @@
+[
+  {"id":"binh-an","name":"Bình An","biome":"plains","special":"lúa, ao sen, hàng tre, chợ nhỏ"},
+  {"id":"moc-lan","name":"Mộc Lan","biome":"mountain","special":"rừng, suối, thác, cầu gỗ, ruộng bậc thang"},
+  {"id":"song-may","name":"Sông Mây","biome":"riverside","special":"sông lớn, bến thuyền, nhà ven sông, chợ nổi"},
+  {"id":"nhat-ha","name":"Nhật Hạ","biome":"beach","special":"biển, cát, hàng dừa, làng chài, hải đăng"},
+  {"id":"thanh-xuan","name":"Thanh Xuân","biome":"valley","special":"thung lũng hoa, suối nhỏ"},
+  {"id":"hoa-son","name":"Hoa Sơn","biome":"mountain","special":"núi đá, rừng thông, miếu cổ"},
+  {"id":"phu-loc","name":"Phú Lộc","biome":"plains","special":"đồng lúa, vườn cây, chợ quê"},
+  {"id":"lam-giang","name":"Lam Giang","biome":"riverside","special":"2 nhánh sông, chợ nổi, rừng phía bắc"}
+]

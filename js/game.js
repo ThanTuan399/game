@@ -1,0 +1,51 @@
+import {Player} from './player.js';
+import {Camera} from './camera.js';
+import {Input} from './input.js';
+import {World,SEASONS,WEATHER} from './world.js';
+import {Renderer} from './renderer.js';
+import {drawLighting} from './lighting.js';
+import {updateNPCs,interactNPC,updateAnimals} from './npc.js';
+import {saveGame,loadGame,hasSave} from './save.js';
+import {mulberry32,hashSeed,fmtTime,clamp,pick} from './utils.js';
+
+export class Game{
+  constructor(canvas,ui){this.canvas=canvas;this.ui=ui;this.renderer=new Renderer(canvas);this.input=new Input(canvas);this.camera=new Camera();this.running=false;this.last=0;this.effects=[];this.sound=localStorage.getItem('mlh_sound')!=='0';this.shake=true;this.activeTool='hand';this.ui.toolButtons.forEach(b=>b.addEventListener('click',()=>{this.setTool(b.dataset.tool)}));}
+  start(town,state){this.town=town;this.state={playerName:'Minh',day:1,season:'Xuân',timeMinutes:360,money:500,inventory:{seed_rice:5,seed_corn:5,seed_carrot:3,seed_pumpkin:2,fish:0,wood:10,stone:5,gem:0,rareFish:0,rareSeed:0,crop_rice:0,crop_corn:0,crop_carrot:0,crop_pumpkin:0,mango:0,coconut:0,dragonfruit:0,tea:0,apple:0,plum:0,potato:0,vegetable:0},farm:{},resources:{},animals:[],npcs:null,discovered:[],weather:'sunny',questProgress:{},quests:{active:'harvest_rice',completed:[],weeklyReward:50},...(state||{})};this.world=new World(town,this.state);if(state?.map){this.world.map=state.map;this.world.width=state.map.width;this.world.height=state.map.height;this.world.farm=state.farm||{};this.world.resources=state.resources||{};this.world.npcs=state.npcs||this.world.npcs;this.world.animals=state.animals||[];this.world.discovered=new Set(state.discovered||[])}this.player=new Player(this.state.playerName,this.world.map.spawn);if(state?.player){Object.assign(this.player,state.player)}this.camera.x=this.player.x*this.world.tileSize-this.renderer.viewWidth/2;this.camera.y=this.player.y*this.world.tileSize-this.renderer.viewHeight/2;this.camera.x=Math.max(0,Math.min(this.camera.x,this.world.width*this.world.tileSize-this.renderer.viewWidth));this.camera.y=Math.max(0,Math.min(this.camera.y,this.world.height*this.world.tileSize-this.renderer.viewHeight));this.running=true;this.ui.showGame();this.refreshHUD();this.last=performance.now();requestAnimationFrame(t=>this.loop(t));}
+  loop(ts){if(!this.running)return;const dt=Math.min(.05,(ts-this.last)/1000);this.last=ts;this.update(dt);this.render();requestAnimationFrame(t=>this.loop(t))}
+  update(dt){this.player.update(dt,this.input,this.world);this.advanceTime(dt);updateNPCs(this.world,dt);updateAnimals(this.world,dt);this.camera.update(this.player,this.world,dt,this.renderer.viewWidth,this.renderer.viewHeight);this.handleActions();this.effects=this.effects.filter(e=>(e.life-=dt)>0).map(e=>({...e,x:e.x+(e.vx||0)*dt,y:e.y+(e.vy||0)*dt}));this.refreshHUD();this.input.clear()}
+  advanceTime(dt){this.state.timeMinutes+=dt*1.2; if(this.state.timeMinutes>=1440){this.state.timeMinutes-=1440;this.newDay()}}
+  newDay(){this.state.day++;this.state.timeMinutes=360;const seasonIndex=(Math.floor((this.state.day-1)/28))%4;this.state.season=SEASONS[seasonIndex];this.state.weather=this.nextWeather();this.world.advanceCropDay(this.state.weather);if(this.state.day%7===0){this.state.money+=this.state.quests?.weeklyReward||50;this.completeQuestIfPossible();}this.toast(this.festivalForDay());saveGame(this)}
+  nextWeather(){const r=mulberry32(hashSeed(`${this.town.seed}-${this.state.day}-weather`))();if(r<.5)return'sunny';if(r<.68)return'cloudy';if(r<.86)return'rain';if(r<.93)return'heavyRain';if(r<.97)return'fog';return'storm'}
+  handleActions(){if(this.input.consume('Escape')){this.running=false;this.ui.showMenu();return}if(this.input.consume('i')||this.input.consume('I')){this.ui.toggleInventory(this.state.inventory);return}if(this.input.consume('m')||this.input.consume('M')){this.ui.showMap(this.world);return}if(this.input.consume('q')||this.input.consume('Q')){this.checkQuest();return}if(this.input.consume('f')||this.input.consume('F')){this.save();return}if(this.input.consume('e')||this.input.consume('E')){const n=this.world.getNPCNear(this.player.x,this.player.y);if(n){this.ui.showDialogue(n.name,interactNPC(n,this.world));this.addHeart(n);return}const o=this.world.getObjectNear(this.player.x,this.player.y);if(o?.type==='market'){this.ui.showShop(this);return}if(o?.type==='townhall'){this.checkQuest();return}if(o?.type==='playerHouse'){this.toast('🏠 Nhà của bạn. Hãy biến nơi này thành tổ ấm!');return}const secret=this.world.exploreNear(this.player.tile.x,this.player.tile.y);if(secret){this.collect(secret.reward);this.toast(`✨ Khám phá bí mật: ${secret.id}`);return}}
+    if(this.input.consume('1'))this.setTool('hoe');if(this.input.consume('2'))this.setTool('seed_rice');if(this.input.consume('3'))this.setTool('water');if(this.input.consume('4'))this.setTool('harvest');if(this.input.consume('5'))this.setTool('axe');if(this.input.consume('6'))this.setTool('pickaxe');if(this.input.consume('7'))this.setTool('fishing');
+    if(this.input.consume(' ')||this.input.consume('Enter'))this.useTool();
+  }
+  useTool(){const {x,y}=this.player.tile;if(this.activeTool==='hoe'){if(this.world.map.tiles[y]?.[x]==='grass'){this.world.map.tiles[y][x]='soil';this.toast('⛏ Đã cuốc đất');this.state.money=Math.max(0,this.state.money-0)}}
+    else if(this.activeTool.startsWith('seed_')){if(this.state.inventory[this.activeTool]>0&&this.world.seedFarm(x,y,this.activeTool.replace('seed_',''))){this.state.inventory[this.activeTool]--;this.toast('🌱 Đã gieo hạt')}}
+    else if(this.activeTool==='water'){if(this.world.waterFarm(x,y))this.toast('💧 Đã tưới nước')} else if(this.activeTool==='harvest'){const crop=this.world.harvestFarm(x,y);if(crop){const key=`crop_${crop}`;this.state.inventory[key]=(this.state.inventory[key]||0)+1;this.state.money+=this.sellPrice(crop);this.toast(`🌾 Thu hoạch ${crop} +${this.sellPrice(crop)}💰`)}}
+    else if(this.activeTool==='axe'){const drop=this.world.cutTree(x,y);if(drop){this.collect(drop);this.toast('🪵 Chặt cây +1 gỗ')}}
+    else if(this.activeTool==='pickaxe'){const drop=this.world.mine(x,y);if(drop){this.collect(drop);this.toast(`⛏ +1 ${drop}`)}}
+    else if(this.activeTool==='fishing'){const catchItem=this.world.fish(x,y);if(catchItem){this.collect(catchItem);this.toast(`🎣 Bạn câu được ${catchItem}`)}}
+  }
+  collect(item){this.state.inventory[item]=(this.state.inventory[item]||0)+1}
+  sellPrice(item){return {rice:8,corn:10,carrot:12,pumpkin:25,mango:20,coconut:18,dragonfruit:28,tea:22,apple:18,plum:19,potato:13,vegetable:11,fish:14,rareFish:90,gem:120,wood:4,woodHard:9,stone:3,rareSeed:55,shell:8,shrimp:13,crab:18}[item]||5}
+  buy(item,price){if(this.state.money>=price){this.state.money-=price;this.collect(item);this.toast(`🧺 Mua ${item}`);return true}this.toast('💸 Không đủ tiền');return false}
+  setTool(tool){this.activeTool=tool;for(const b of this.ui.toolButtons)b.classList.toggle('selected',b.dataset.tool===tool)}
+  addHeart(n){this.effects.push({type:'heart',x:n.x*this.world.tileSize-this.camera.x,y:n.y*this.world.tileSize-this.camera.y-16,vx:0,vy:-7,life:1})}
+  toast(msg){this.ui.toast(msg)}
+  refreshHUD(){if(!this.town)return;this.ui.town.textContent=this.town.name;this.ui.date.textContent=`Ngày ${this.state.day} · ${this.state.season}`;this.ui.time.textContent=fmtTime(this.state.timeMinutes);const icons={sunny:'☀ Nắng',cloudy:'☁ Nhiều mây',rain:'🌧 Mưa',heavyRain:'🌧 Mưa lớn',fog:'🌫 Sương',wind:'💨 Gió',storm:'⛈ Bão'};this.ui.weather.textContent=icons[this.state.weather]||this.state.weather;this.ui.money.textContent=Math.floor(this.state.money);}
+  render(){this.renderer.draw(this)}
+  drawLightingAndWeather(){drawLighting(this.renderer.ctx,this.state.timeMinutes,this.state.weather);this.drawWeatherParticles()}
+  drawWeatherParticles(){const ctx=this.renderer.ctx;if(['rain','heavyRain','storm'].includes(this.state.weather)){ctx.save();ctx.strokeStyle='rgba(195,226,236,.6)';ctx.lineWidth=1;const n=this.state.weather==='storm'?180:110;for(let i=0;i<n;i++){const x=(i*73+this.state.timeMinutes*8)%this.renderer.viewWidth,y=(i*29+this.state.timeMinutes*14)%this.renderer.viewHeight;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-2,y+6);ctx.stroke()}ctx.restore()}if(this.state.weather==='fog'){ctx.fillStyle='rgba(231,237,225,.16)';ctx.fillRect(0,0,this.renderer.viewWidth,this.renderer.viewHeight)}}
+
+  festivalForDay(){const events=['🌅 Một ngày mới bắt đầu.','🌸 Lễ hội mùa xuân đang diễn ra ở quảng trường!','🎣 Hội câu cá hôm nay! Cá bán được giá hơn.','🏮 Chợ đêm mở cửa tối nay!','🌾 Hội mùa màng — nông sản được yêu thích hơn.'];return this.state.day%7===0?events[((this.state.day/7)%events.length)|0]:'🌅 Một ngày mới bắt đầu.'}
+  checkQuest(){const q=this.state.quests?.active||'harvest_rice';const needs={harvest_rice:{name:'Mẻ lúa đầu tiên',item:'crop_rice',amount:3,reward:80,text:'Thu hoạch 3 bao lúa cho trưởng thị trấn.'},collect_wood:{name:'Sửa hàng rào',item:'wood',amount:10,reward:65,text:'Giao 10 gỗ cho thợ mộc.'},catch_fish:{name:'Bữa tối ven sông',item:'fish',amount:2,reward:70,text:'Mang 2 con cá tươi đến quán.'}}[q];if(!needs)return;const have=this.state.inventory[needs.item]||0;if(have>=needs.amount){this.state.inventory[needs.item]-=needs.amount;this.state.money+=needs.reward;this.state.quests.completed.push(q);this.state.quests.active=q==='harvest_rice'?'collect_wood':q==='collect_wood'?'catch_fish':'harvest_rice';this.toast(`✅ Hoàn thành: ${needs.name} +${needs.reward}💰`)}else this.ui.showDialogue('📜 Nhiệm vụ',`${needs.name}: ${needs.text} (${have}/${needs.amount})`)}
+  completeQuestIfPossible(){if(this.state.quests?.active)this.checkQuest()}
+  snapshot(){return{town:this.town,state:{...this.state,map:undefined,player:{x:this.player.x,y:this.player.y,dir:this.player.dir,stamina:this.player.stamina,energy:this.player.energy}}}}
+  save(){this.state.playerName=this.player.name;saveGame(this);this.toast('💾 Đã lưu thế giới')}
+  static loadFromSave(save){return save}
+}
+
+export function toolData(){return[
+  ['hand','🤲','Tay'],['hoe','⛏','Cuốc'],['seed_rice','🌾','Lúa'],['seed_corn','🌽','Ngô'],['seed_carrot','🥕','Cà rốt'],['water','💧','Tưới'],['harvest','🧺','Thu hoạch'],['axe','🪓','Rìu'],['pickaxe','⛏️','Cuốc đá'],['fishing','🎣','Câu cá']
+]}
