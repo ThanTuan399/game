@@ -1,36 +1,360 @@
-import {Game,toolData} from './game.js';
-import {createTown,randomConfig} from './townGenerator.js';
-import {hasSave,loadGame,saveGame} from './save.js';
+import { Game } from './game.js';
+import { createTown, randomConfig } from './townGenerator.js';
+import { hasSave, loadGame } from './save.js';
+import { SHOP_STOCK, TOOL_DEFS, getItemMeta } from './content.js';
 
-const $=id=>document.getElementById(id);
-const menu=$('menuScreen'),create=$('createScreen'),gameScreen=$('gameScreen');
-const canvas=$('gameCanvas');
-const ui={town:$('townHud'),date:$('dateHud'),time:$('timeHud'),weather:$('weatherHud'),money:$('moneyHud'),toolButtons:[] ,showGame(){menu.classList.remove('active');create.classList.remove('active');gameScreen.classList.add('active')},showMenu(){gameScreen.classList.remove('active');create.classList.remove('active');menu.classList.add('active')},toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._tm);t._tm=setTimeout(()=>t.classList.remove('show'),1800)},showDialogue(name,lines){$('dialogueName').textContent=name;const arr=Array.isArray(lines)?[...lines]:[lines];let index=0;$('dialogueText').textContent=arr[0]||'';$('dialogueBox').classList.remove('hidden');$('dialogueClose').textContent=arr.length>1?'Tiếp':'Đóng';$('dialogueClose').onclick=()=>{if(index<arr.length-1){index++;$('dialogueText').textContent=arr[index];$('dialogueClose').textContent=index===arr.length-1?'Đóng':'Tiếp'}else $('dialogueBox').classList.add('hidden')}} ,showShop(g){const box=$('shopBox'),wrap=$('shopItems');const buys=[['seed_rice','🌾 Hạt lúa',12],['seed_corn','🌽 Hạt ngô',14],['seed_carrot','🥕 Hạt cà rốt',16],['seed_pumpkin','🎃 Hạt bí',28],['fertilizer','✨ Phân bón',18],['tea','🍵 Trà giống vùng núi',35]];wrap.innerHTML='';for(const [id,n,price] of buys){const el=document.createElement('div');el.className='shop-item';el.innerHTML=`<b>${n}</b><div>${price} 💰</div><button>MUA</button>`;el.querySelector('button').onclick=()=>{if(g.buy(id,price))this.refreshInventory(g)};wrap.appendChild(el)}const sell=document.createElement('div');sell.className='shop-item';sell.innerHTML=`<b>📦 Bán hàng đang có</b><p>Gộp toàn bộ nông sản/cá/tài nguyên có thể bán.</p><button>BÁN TẤT CẢ</button>`;sell.querySelector('button').onclick=()=>{let total=0;for(const k in g.state.inventory){if(k.startsWith('crop_')){const item=k.replace('crop_','');total+=(g.state.inventory[k]||0)*g.sellPrice(item);g.state.inventory[k]=0}else if(['fish','rareFish','gem','wood','woodHard','stone','shell','shrimp','crab'].includes(k)){total+=(g.state.inventory[k]||0)*g.sellPrice(k);g.state.inventory[k]=0}}g.state.money+=total;g.toast(total?`💰 Bán hàng +${total}`:'Không có gì để bán');this.refreshInventory(g)};wrap.appendChild(sell);box.classList.remove('hidden')},showMap(world){const o=$('mapOverlay');o.classList.remove('hidden');const c=$('mapCanvas'),ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;const sx=c.width/world.width,sy=c.height/world.height;for(let y=0;y<world.height;y++)for(let x=0;x<world.width;x++){const t=world.map.tiles[y][x],color=t==='water'?'#4b9db5':t==='soil'?'#936749':t==='path'?'#c79b64':t==='sand'?'#e4cc83':t==='rock'?'#777b78':t==='forest'?'#427a52':world.town.colors.grass;ctx.fillStyle=color;ctx.fillRect(x*sx,y*sy,Math.ceil(sx),Math.ceil(sy))}ctx.fillStyle='#fff';ctx.font='10px monospace';ctx.fillText(world.town.name,8,16)},toggleInventory(inv){if($('inventoryBox').classList.contains('hidden')){$('inventoryBox').classList.remove('hidden');this.refreshInventory(window.__GAME)}else $('inventoryBox').classList.add('hidden')},refreshInventory(g){if(!g)return;const wrap=$('inventoryItems');wrap.innerHTML='';const entries=Object.entries(g.state.inventory).filter(([,v])=>v>0);if(!entries.length)wrap.innerHTML='<div class="inventory-item">Túi đang trống.</div>';for(const [id,v] of entries){const el=document.createElement('div');el.className='inventory-item';el.textContent=`${id} × ${v}`;wrap.appendChild(el)}}};
+const $ = id => document.getElementById(id);
+const menu = $('menuScreen');
+const create = $('createScreen');
+const gameScreen = $('gameScreen');
+const canvas = $('gameCanvas');
 
-function setupTools(){const labels=toolData();const bar=$('toolBar');for(const [id,icon,name] of labels){const b=document.createElement('button');b.className='tool';b.dataset.tool=id;b.title=`${name} · phím ${id.startsWith('seed_')?'2':''}`;b.textContent=icon;bar.appendChild(b);ui.toolButtons.push(b)}ui.toolButtons[0].classList.add('selected')}
-function renderPreview(town){const c=$('previewCanvas'),ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.fillStyle=town.colors.grass;ctx.fillRect(0,0,c.width,c.height);for(let i=0;i<70;i++){const x=(i*61+town.seed)%c.width,y=(i*37+town.seed/3)%c.height;ctx.fillStyle=i%3?'#4e9153':'#2e7048';ctx.fillRect(x,y,6,6)}if(town.river){ctx.fillStyle='#519db2';ctx.fillRect(205,0,25,240);ctx.fillStyle='#7fd2d0';for(let y=0;y<240;y+=16)ctx.fillRect(207,y,10,2)}ctx.fillStyle='#9b6b48';ctx.fillRect(120,122,190,8);ctx.fillRect(205,60,8,120);ctx.fillStyle='#cc694b';ctx.fillRect(172,96,42,23);ctx.fillStyle='#efd39b';ctx.fillRect(178,104,30,15);ctx.fillStyle='#477c4b';for(let i=0;i<12;i++){ctx.fillRect(20+i*33,35+(i%2)*18,12,18);ctx.fillStyle='#2b6646';ctx.fillRect(18+i*33,28+(i%2)*18,16,10);ctx.fillStyle='#477c4b'}ctx.fillStyle='#fff0c4';ctx.font='bold 16px monospace';ctx.fillText(town.name,16,226)}
-function updateSummary(){const town=createTown({townName:$('townName').value,seed:$('seedInput').value,biome:document.querySelector('.biome-card.selected')?.dataset.biome||'plains',style:$('styleSelect').value});renderPreview(town);$('worldSummary').innerHTML=`<b>${town.name}</b><br>Địa hình: ${town.terrain}<br>Khí hậu: ${town.climate}<br>Dân số: ${town.population} người · Sông: ${town.river?'Có':'Không'} · Rừng: ${town.forest?'Có':'Không'}<br>Đặc sản: ${town.crops.join(' · ')}`}
+const ui = {
+  town: $('townHud'),
+  date: $('dateHud'),
+  time: $('timeHud'),
+  weather: $('weatherHud'),
+  money: $('moneyHud'),
+  toolButtons: [],
 
-const biomes=[['plains','🌾','Đồng bằng'],['mountain','⛰️','Vùng núi'],['rice','🌱','Đồng ruộng'],['riverside','🌊','Ven sông'],['beach','🏝️','Ven biển'],['tropical','🌴','Nhiệt đới'],['forest','🌲','Vùng rừng'],['valley','🏞️','Thung lũng']];
-function setupCreate(){const wrap=$('biomeCards');for(const [id,ico,name] of biomes){const b=document.createElement('button');b.className='biome-card';b.dataset.biome=id;b.innerHTML=`<span class="biome-icon">${ico}</span>${name}`;b.onclick=()=>{document.querySelectorAll('.biome-card').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');updateSummary()};wrap.appendChild(b)}wrap.firstElementChild.classList.add('selected');$('styleSelect').innerHTML=['village','storybook','lush','coastal','mountain'].map(x=>`<option value="${x}">${x}</option>`).join('');['townName','seedInput','styleSelect'].forEach(id=>$(id).addEventListener('input',updateSummary));updateSummary();}
-function newWorld(){const town=createTown({townName:$('townName').value,seed:$('seedInput').value,biome:document.querySelector('.biome-card.selected')?.dataset.biome||'plains',style:$('styleSelect').value});const game=new Game(canvas,ui);window.__GAME=game;game.start(town,{playerName:$('playerName').value||'Minh'});}
+  showGame() {
+    menu.classList.remove('active');
+    create.classList.remove('active');
+    gameScreen.classList.add('active');
+  },
 
-setupTools();setupCreate();
-$('newGameBtn').onclick=()=>{create.classList.add('active');menu.classList.remove('active')};
-$('backMenuBtn').onclick=()=>ui.showMenu();
-$('generateBtn').onclick=newWorld;
-$('randomTownBtn').onclick=()=>{const r=randomConfig();$('townName').value=r.townName;$('seedInput').value=r.seed;$('styleSelect').value=r.style;document.querySelectorAll('.biome-card').forEach(x=>x.classList.toggle('selected',x.dataset.biome===r.biome));updateSummary()};
-$('continueBtn').onclick=()=>{const s=loadGame();if(!s){alert('Chưa có bản lưu. Hãy tạo thế giới mới.');return}const game=new Game(canvas,ui);window.__GAME=game;game.start(s.town,s.state);game.state.farm=s.farm||game.state.farm;game.world.map=s.map||game.world.map;game.world.farm=s.farm||{};game.world.resources=s.resources||{};game.world.animals=s.animals||game.world.animals;game.world.npcs=s.npcs||game.world.npcs;game.world.discovered=new Set(s.discovered||[]);if(s.player)Object.assign(game.player,s.player);};
-$('settingsBtn').onclick=()=>$('settingsBox').classList.remove('hidden');$('settingsClose').onclick=()=>{$('settingsBox').classList.add('hidden');localStorage.setItem('mlh_sound',$('soundToggle').checked?'1':'0')};$('dialogueClose').onclick=()=>$('dialogueBox').classList.add('hidden');$('shopClose').onclick=()=>$('shopBox').classList.add('hidden');$('inventoryClose').onclick=()=>$('inventoryBox').classList.add('hidden');$('mapClose').onclick=()=>$('mapOverlay').classList.add('hidden');
+  showMenu() {
+    gameScreen.classList.remove('active');
+    create.classList.remove('active');
+    menu.classList.add('active');
+    updateContinueButton();
+  },
 
-$('fullscreenBtn').onclick=async()=>{
-  try{
-    if(!document.fullscreenElement) await document.documentElement.requestFullscreen();
-    else await document.exitFullscreen();
-  }catch{}
+  toast(message) {
+    const toast = $('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.remove('show'), 1800);
+  },
+
+  showDialogue(name, lines) {
+    $('dialogueName').textContent = name;
+    const messages = Array.isArray(lines) ? [...lines] : [lines];
+    let index = 0;
+    $('dialogueText').textContent = messages[0] || '';
+    $('dialogueBox').classList.remove('hidden');
+    $('dialogueClose').textContent = messages.length > 1 ? 'Tiếp' : 'Đóng';
+    $('dialogueClose').onclick = () => {
+      if (index < messages.length - 1) {
+        index += 1;
+        $('dialogueText').textContent = messages[index];
+        $('dialogueClose').textContent = index === messages.length - 1 ? 'Đóng' : 'Tiếp';
+      } else {
+        $('dialogueBox').classList.add('hidden');
+      }
+    };
+  },
+
+  showShop(game) {
+    const box = $('shopBox');
+    const wrap = $('shopItems');
+    wrap.innerHTML = '';
+
+    for (const itemId of SHOP_STOCK) {
+      const meta = getItemMeta(itemId);
+      const element = document.createElement('div');
+      element.className = 'shop-item';
+      element.innerHTML = `<b>${meta.icon} ${meta.name}</b><div>${meta.buy} 💰</div><button>MUA</button>`;
+      element.querySelector('button').onclick = () => {
+        if (game.buy(itemId)) this.refreshInventory(game);
+      };
+      wrap.appendChild(element);
+    }
+
+    const sell = document.createElement('div');
+    sell.className = 'shop-item shop-sell-all';
+    sell.innerHTML = '<b>📦 Bán vật phẩm</b><p>Bán toàn bộ nông sản, cá và tài nguyên có giá bán.</p><button>BÁN TẤT CẢ</button>';
+    sell.querySelector('button').onclick = () => {
+      game.sellAllInventory();
+      this.refreshInventory(game);
+    };
+    wrap.appendChild(sell);
+    box.classList.remove('hidden');
+  },
+
+  showMap(world) {
+    const overlay = $('mapOverlay');
+    overlay.classList.remove('hidden');
+    const mapCanvas = $('mapCanvas');
+    const ctx = mapCanvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    const sx = mapCanvas.width / world.width;
+    const sy = mapCanvas.height / world.height;
+
+    for (let y = 0; y < world.height; y++) {
+      for (let x = 0; x < world.width; x++) {
+        const tile = world.map.tiles[y][x];
+        const color = tile === 'water'
+          ? '#4b9db5'
+          : tile === 'soil'
+            ? '#936749'
+            : tile === 'path'
+              ? '#c79b64'
+              : tile === 'sand'
+                ? '#e4cc83'
+                : tile === 'rock'
+                  ? '#777b78'
+                  : tile === 'forest'
+                    ? '#427a52'
+                    : world.town.colors.grass;
+        ctx.fillStyle = color;
+        ctx.fillRect(x * sx, y * sy, Math.ceil(sx), Math.ceil(sy));
+      }
+    }
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px monospace';
+    ctx.fillText(world.town.name, 8, 16);
+  },
+
+  toggleInventory() {
+    const box = $('inventoryBox');
+    if (box.classList.contains('hidden')) {
+      box.classList.remove('hidden');
+      this.refreshInventory(window.__GAME);
+    } else {
+      box.classList.add('hidden');
+    }
+  },
+
+  refreshInventory(game) {
+    if (!game) return;
+    const wrap = $('inventoryItems');
+    wrap.innerHTML = '';
+    const entries = Object.entries(game.state.inventory)
+      .filter(([, count]) => count > 0)
+      .sort(([a], [b]) => getItemMeta(a).name.localeCompare(getItemMeta(b).name, 'vi'));
+
+    if (!entries.length) {
+      wrap.innerHTML = '<div class="inventory-item">Túi đang trống.</div>';
+      return;
+    }
+
+    for (const [itemId, count] of entries) {
+      const meta = getItemMeta(itemId);
+      const element = document.createElement('div');
+      element.className = 'inventory-item';
+      element.innerHTML = `<span class="item-icon">${meta.icon}</span><b>${meta.name}</b><span>× ${count}</span>`;
+      wrap.appendChild(element);
+    }
+  },
+
+  isBlocking() {
+    const blockingIds = ['dialogueBox', 'shopBox', 'inventoryBox', 'settingsBox', 'mapOverlay'];
+    return blockingIds.some(id => !$(id).classList.contains('hidden'));
+  },
+
+  closeTopOverlay() {
+    const priority = ['settingsBox', 'mapOverlay', 'shopBox', 'inventoryBox', 'dialogueBox'];
+    const open = priority.find(id => !$(id).classList.contains('hidden'));
+    if (open) $(open).classList.add('hidden');
+  },
+
+  onSave() {
+    updateContinueButton();
+  }
 };
 
-document.addEventListener('fullscreenchange',()=>{
-  const b=$('fullscreenBtn'); if(b) b.textContent=document.fullscreenElement?'⛶':'⛶';
+function setupTools() {
+  const bar = $('toolBar');
+  bar.innerHTML = '';
+  ui.toolButtons.length = 0;
+
+  for (const tool of TOOL_DEFS) {
+    const button = document.createElement('button');
+    button.className = 'tool';
+    button.dataset.tool = tool.id;
+    button.title = tool.hotkey ? `${tool.name} · phím ${tool.hotkey}` : tool.name;
+    button.innerHTML = `<span>${tool.icon}</span>${tool.hotkey ? `<small>${tool.hotkey}</small>` : ''}`;
+    bar.appendChild(button);
+    ui.toolButtons.push(button);
+  }
+  ui.toolButtons[0]?.classList.add('selected');
+}
+
+function renderPreview(town) {
+  const preview = $('previewCanvas');
+  const ctx = preview.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = town.colors.grass;
+  ctx.fillRect(0, 0, preview.width, preview.height);
+
+  for (let i = 0; i < 70; i++) {
+    const x = (i * 61 + town.seed) % preview.width;
+    const y = (i * 37 + town.seed / 3) % preview.height;
+    ctx.fillStyle = i % 3 ? '#4e9153' : '#2e7048';
+    ctx.fillRect(x, y, 6, 6);
+  }
+
+  if (town.river) {
+    ctx.fillStyle = '#519db2';
+    ctx.fillRect(205, 0, 25, 240);
+    ctx.fillStyle = '#7fd2d0';
+    for (let y = 0; y < 240; y += 16) ctx.fillRect(207, y, 10, 2);
+  }
+
+  ctx.fillStyle = '#9b6b48';
+  ctx.fillRect(120, 122, 190, 8);
+  ctx.fillRect(205, 60, 8, 120);
+  ctx.fillStyle = '#cc694b';
+  ctx.fillRect(172, 96, 42, 23);
+  ctx.fillStyle = '#efd39b';
+  ctx.fillRect(178, 104, 30, 15);
+  ctx.fillStyle = '#477c4b';
+
+  for (let i = 0; i < 12; i++) {
+    ctx.fillRect(20 + i * 33, 35 + (i % 2) * 18, 12, 18);
+    ctx.fillStyle = '#2b6646';
+    ctx.fillRect(18 + i * 33, 28 + (i % 2) * 18, 16, 10);
+    ctx.fillStyle = '#477c4b';
+  }
+
+  ctx.fillStyle = '#fff0c4';
+  ctx.font = 'bold 16px monospace';
+  ctx.fillText(town.name, 16, 226);
+}
+
+function updateSummary() {
+  const town = createTown({
+    townName: $('townName').value,
+    seed: $('seedInput').value,
+    biome: document.querySelector('.biome-card.selected')?.dataset.biome || 'plains',
+    style: $('styleSelect').value
+  });
+  renderPreview(town);
+  $('worldSummary').innerHTML = `<b>${town.name}</b><br>Địa hình: ${town.terrain}<br>Khí hậu: ${town.climate}<br>Dân số: ${town.population} người · Sông: ${town.river ? 'Có' : 'Không'} · Rừng: ${town.forest ? 'Có' : 'Không'}<br>Đặc sản: ${town.crops.join(' · ')}`;
+}
+
+const biomes = [
+  ['plains', '🌾', 'Đồng bằng'],
+  ['mountain', '⛰️', 'Vùng núi'],
+  ['rice', '🌱', 'Đồng ruộng'],
+  ['riverside', '🌊', 'Ven sông'],
+  ['beach', '🏝️', 'Ven biển'],
+  ['tropical', '🌴', 'Nhiệt đới'],
+  ['forest', '🌲', 'Vùng rừng'],
+  ['valley', '🏞️', 'Thung lũng']
+];
+
+function setupCreate() {
+  const wrap = $('biomeCards');
+  for (const [id, icon, name] of biomes) {
+    const button = document.createElement('button');
+    button.className = 'biome-card';
+    button.dataset.biome = id;
+    button.innerHTML = `<span class="biome-icon">${icon}</span>${name}`;
+    button.onclick = () => {
+      document.querySelectorAll('.biome-card').forEach(item => item.classList.remove('selected'));
+      button.classList.add('selected');
+      updateSummary();
+    };
+    wrap.appendChild(button);
+  }
+
+  wrap.firstElementChild.classList.add('selected');
+  $('styleSelect').innerHTML = ['village', 'storybook', 'lush', 'coastal', 'mountain']
+    .map(style => `<option value="${style}">${style}</option>`)
+    .join('');
+  ['townName', 'seedInput', 'styleSelect'].forEach(id => $(id).addEventListener('input', updateSummary));
+  updateSummary();
+}
+
+function newWorld() {
+  const town = createTown({
+    townName: $('townName').value,
+    seed: $('seedInput').value,
+    biome: document.querySelector('.biome-card.selected')?.dataset.biome || 'plains',
+    style: $('styleSelect').value
+  });
+  const game = new Game(canvas, ui);
+  window.__GAME = game;
+  game.start(town, { playerName: $('playerName').value || 'Minh' });
+}
+
+function updateContinueButton() {
+  const button = $('continueBtn');
+  const available = hasSave();
+  button.disabled = !available;
+  button.title = available ? 'Tiếp tục bản lưu gần nhất' : 'Chưa có bản lưu';
+}
+
+function openSettings() {
+  $('soundToggle').checked = localStorage.getItem('mlh_sound') !== '0';
+  $('shakeToggle').checked = localStorage.getItem('mlh_shake') !== '0';
+  $('settingsBox').classList.remove('hidden');
+}
+
+function closeSettings() {
+  localStorage.setItem('mlh_sound', $('soundToggle').checked ? '1' : '0');
+  localStorage.setItem('mlh_shake', $('shakeToggle').checked ? '1' : '0');
+  if (window.__GAME) {
+    window.__GAME.sound = $('soundToggle').checked;
+    window.__GAME.shake = $('shakeToggle').checked;
+  }
+  $('settingsBox').classList.add('hidden');
+}
+
+setupTools();
+setupCreate();
+updateContinueButton();
+
+$('newGameBtn').onclick = () => {
+  create.classList.add('active');
+  menu.classList.remove('active');
+};
+$('backMenuBtn').onclick = () => ui.showMenu();
+$('generateBtn').onclick = newWorld;
+$('randomTownBtn').onclick = () => {
+  const random = randomConfig();
+  $('townName').value = random.townName;
+  $('seedInput').value = random.seed;
+  $('styleSelect').value = random.style;
+  document.querySelectorAll('.biome-card').forEach(item => {
+    item.classList.toggle('selected', item.dataset.biome === random.biome);
+  });
+  updateSummary();
+};
+
+$('continueBtn').onclick = () => {
+  const save = loadGame();
+  if (!save) {
+    alert('Chưa có bản lưu. Hãy tạo thế giới mới.');
+    updateContinueButton();
+    return;
+  }
+  const game = new Game(canvas, ui);
+  window.__GAME = game;
+  game.start(save.town, save.state);
+};
+
+$('settingsBtn').onclick = openSettings;
+$('settingsClose').onclick = closeSettings;
+$('shopClose').onclick = () => $('shopBox').classList.add('hidden');
+$('inventoryClose').onclick = () => $('inventoryBox').classList.add('hidden');
+$('mapClose').onclick = () => $('mapOverlay').classList.add('hidden');
+
+$('fullscreenBtn').onclick = async () => {
+  try {
+    if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+    else await document.exitFullscreen();
+  } catch {}
+};
+
+document.addEventListener('fullscreenchange', () => {
   window.__GAME?.renderer.resize();
+});
+
+window.addEventListener('beforeunload', () => {
+  if (window.__GAME?.running) window.__GAME.save(true);
 });
