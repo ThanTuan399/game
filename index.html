@@ -60,33 +60,33 @@
         <div class="hud-chip"><span id="dateHud">Ngày 1 · Xuân</span></div>
         <div class="hud-chip"><span id="timeHud">06:00</span></div>
         <div class="hud-chip weather-chip"><span id="weatherHud">☀ Nắng</span></div>
-        <div class="hud-chip money-chip">💰 <span id="moneyHud">500</span></div><button id="fullscreenBtn" class="hud-chip fullscreen-btn" title="Toàn màn hình">⛶</button>
+        <div class="hud-chip money-chip">💰 <span id="moneyHud">500</span></div>
+        <button id="fullscreenBtn" class="hud-chip fullscreen-btn" title="Toàn màn hình">⛶</button>
       </div>
+
       <div class="hud-bottom">
         <div id="toolBar" class="toolbar"></div>
-        <div class="hint">WASD di chuyển · SHIFT chạy · SPACE dùng dụng cụ · E tương tác · I túi · M bản đồ · ESC menu</div>
+        <div class="hint">WASD di chuyển · SHIFT chạy · 1–0 chọn công cụ · SPACE dùng công cụ · E tương tác · I túi · M bản đồ · Q nhiệm vụ · F lưu · ESC menu</div>
       </div>
+
       <div id="dialogueBox" class="overlay-box hidden">
         <div class="overlay-title" id="dialogueName">NPC</div>
         <div id="dialogueText"></div>
         <button id="dialogueClose" class="text-btn">Đóng</button>
       </div>
+
       <div id="shopBox" class="overlay-box hidden large-box">
         <div class="overlay-title">🧺 CỬA HÀNG</div>
         <div id="shopItems" class="shop-items"></div>
         <button id="shopClose" class="text-btn">Đóng</button>
       </div>
+
       <div id="inventoryBox" class="overlay-box hidden large-box">
         <div class="overlay-title">🎒 TÚI ĐỒ</div>
         <div id="inventoryItems" class="inventory-items"></div>
         <button id="inventoryClose" class="text-btn">Đóng</button>
       </div>
-      <div id="settingsBox" class="overlay-box hidden">
-        <div class="overlay-title">⚙ CÀI ĐẶT</div>
-        <label class="setting-line">Âm thanh <input type="checkbox" id="soundToggle" checked /></label>
-        <label class="setting-line">Màn hình rung <input type="checkbox" id="shakeToggle" checked /></label>
-        <button id="settingsClose" class="text-btn">Đóng</button>
-      </div>
+
       <div id="mapOverlay" class="map-overlay hidden">
         <div class="map-window">
           <div class="overlay-title">🗺 BẢN ĐỒ THỊ TRẤN</div>
@@ -95,6 +95,14 @@
         </div>
       </div>
       <div id="toast" class="toast"></div>
+    </div>
+
+    <div id="settingsBox" class="overlay-box hidden large-box settings-global">
+      <div class="overlay-title">⚙ CÀI ĐẶT</div>
+      <label class="setting-line">Âm thanh <input type="checkbox" id="soundToggle" checked /></label>
+      <label class="setting-line">Màn hình rung <input type="checkbox" id="shakeToggle" checked /></label>
+      <p class="settings-note">Các tùy chọn được lưu trên trình duyệt và là điểm mở rộng cho hệ thống audio/feedback sau này.</p>
+      <button id="settingsClose" class="text-btn">Đóng & lưu</button>
     </div>
   </div>
   <script type="module" src="js/main.js"></script>
