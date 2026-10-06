@@ -23,16 +23,22 @@ export class World {
     this.specials = {};
     this.buildSpecials();
 
+    this.syncStateReferences();
+  }
+
+  syncStateReferences() {
     this.state.farm = this.farm;
     this.state.resources = this.resources;
     this.state.animals = this.animals;
     this.state.npcs = this.npcs;
+    this.state.discovered = [...this.discovered];
   }
 
   createAnimals() {
     const out = [];
     const bx = Math.floor(this.width / 2) + 10;
     const by = Math.floor(this.height / 2) + 8;
+
     for (let i = 0; i < 4; i++) {
       out.push({ id: `cow-${i}`, type: 'cow', x: bx + (i % 2) * 2, y: by + Math.floor(i / 2) * 2, step: 0 });
     }
@@ -55,53 +61,67 @@ export class World {
       ['Vy', 'người bán hoa', 'sweet'],
       ['Bình', 'trưởng thị trấn', 'leader']
     ];
+
     const cx = this.width / 2;
     const cy = this.height / 2;
-    return list.map((v, i) => ({
-      id: `npc-${i}`,
-      name: v[0],
-      job: v[1],
-      personality: v[2],
-      x: cx + (i % 4) * 3 - 5,
-      y: cy + Math.floor(i / 4) * 3 - 2,
-      home: i % 2 ? 'village' : 'town',
+
+    return list.map((value, index) => ({
+      id: `npc-${index}`,
+      name: value[0],
+      job: value[1],
+      personality: value[2],
+      x: cx + (index % 4) * 3 - 5,
+      y: cy + Math.floor(index / 4) * 3 - 2,
+      home: index % 2 ? 'village' : 'town',
       friendship: 0,
       step: 0,
       dir: 'down',
-      color: i % 2 ? '#c56e57' : '#6e78bf'
+      color: index % 2 ? '#c56e57' : '#6e78bf'
     }));
   }
 
   buildSpecials() {
     this.specials = {};
-    for (const o of this.map.objects) {
-      if (['cave', 'shrine', 'lighthouse', 'pier'].includes(o.type)) this.specials[o.type] = o;
+    for (const object of this.map.objects) {
+      if (['cave', 'shrine', 'lighthouse', 'pier'].includes(object.type)) {
+        this.specials[object.type] = object;
+      }
     }
   }
 
   hasBlockingObjectAt(x, y) {
-    const blockedTypes = ['tree', 'rockObj', 'house', 'woodHouse', 'townhall', 'market', 'cafe', 'playerHouse', 'barn', 'cave', 'shrine', 'lighthouse'];
-    return this.map.objects.some(o => o.x === x && o.y === y && blockedTypes.includes(o.type));
+    const blockedTypes = [
+      'tree', 'rockObj', 'house', 'woodHouse', 'townhall',
+      'market', 'cafe', 'playerHouse', 'barn', 'cave',
+      'shrine', 'lighthouse'
+    ];
+    return this.map.objects.some(object => object.x === x && object.y === y && blockedTypes.includes(object.type));
   }
 
   canWalk(x, y) {
-    if (x < 1 || y < 1 || x > this.width - 1 || y > this.height - 1) return false;
-    const t = this.map.tiles[Math.floor(y)]?.[Math.floor(x)];
-    if (!t || ['water', 'rock'].includes(t)) return false;
+    if (x < 1 || y < 1 || x >= this.width - 1 || y >= this.height - 1) return false;
+    const tile = this.map.tiles[Math.floor(y)]?.[Math.floor(x)];
+    if (!tile || ['water', 'rock'].includes(tile)) return false;
 
-    for (const o of this.map.objects) {
-      const blocked = ['tree', 'rockObj', 'house', 'woodHouse', 'townhall', 'market', 'cafe', 'playerHouse', 'barn', 'cave', 'shrine', 'lighthouse'].includes(o.type);
-      if (blocked && Math.abs(o.x + 0.5 - x) < 0.55 && Math.abs(o.y + 0.5 - y) < 0.55) return false;
+    const blockedTypes = [
+      'tree', 'rockObj', 'house', 'woodHouse', 'townhall',
+      'market', 'cafe', 'playerHouse', 'barn', 'cave',
+      'shrine', 'lighthouse'
+    ];
+
+    for (const object of this.map.objects) {
+      if (!blockedTypes.includes(object.type)) continue;
+      if (Math.abs(object.x + 0.5 - x) < 0.55 && Math.abs(object.y + 0.5 - y) < 0.55) return false;
     }
     return true;
   }
 
-  getObjectNear(x, y, r = 1.6) {
-    return this.map.objects.find(o => Math.hypot(o.x + 0.5 - x, o.y + 0.5 - y) < r);
+  getObjectNear(x, y, radius = 1.6) {
+    return this.map.objects.find(object => Math.hypot(object.x + 0.5 - x, object.y + 0.5 - y) < radius);
   }
 
-  getNPCNear(x, y, r = 1.8) {
-    return this.npcs.find(n => Math.hypot(n.x - x, n.y - y) < r);
+  getNPCNear(x, y, radius = 1.8) {
+    return this.npcs.find(npc => Math.hypot(npc.x - x, npc.y - y) < radius);
   }
 
   isWater(x, y) {
@@ -110,14 +130,18 @@ export class World {
 
   advanceCropDay(weather) {
     const rainy = ['rain', 'heavyRain', 'storm'].includes(weather);
+
     for (const key of Object.keys(this.farm)) {
       const crop = this.farm[key];
       if (!crop) continue;
+
       crop.age = (crop.age || 0) + 1;
+
       if (crop.watered || rainy) {
         const boost = crop.fertilized ? 2 : 1;
         crop.growth = Math.min(crop.maxGrowth, (crop.growth || 0) + boost);
       }
+
       crop.ready = crop.growth >= crop.maxGrowth;
       crop.watered = false;
       crop.fertilized = false;
@@ -127,7 +151,9 @@ export class World {
   seedFarm(x, y, cropId) {
     const key = `${x},${y}`;
     const cropDef = getCropDef(cropId);
+
     if (!cropDef || this.map.tiles[y]?.[x] !== 'soil' || this.farm[key]) return false;
+
     this.farm[key] = {
       crop: cropId,
       age: 0,
@@ -157,50 +183,71 @@ export class World {
   harvestFarm(x, y) {
     const key = `${x},${y}`;
     const crop = this.farm[key];
+
     if (!crop || crop.growth < crop.maxGrowth) return null;
+
     delete this.farm[key];
     return crop.crop;
   }
 
-  fish(x, y) {
+  fish(x, y, fishingLevel = 1) {
     if (!this.isWater(x, y)) return null;
+
     const coastal = this.town.beach || this.town.crops.includes('seafood');
     const common = coastal ? ['shrimp', 'fish', 'crab'] : ['fish', 'fish', 'carp'];
+    const rareWeight = Math.max(1, fishingLevel * 1.4);
+
     return weightedPick(this.rng, [
       ...common.map(value => ({ value, weight: 7 })),
-      { value: 'rareFish', weight: 1 }
+      { value: 'rareFish', weight: rareWeight }
     ]);
   }
 
-  mine(x, y) {
+  mine(x, y, toolLevel = 1) {
     if (this.map.tiles[y]?.[x] !== 'rock') return null;
+
     const key = `${x},${y}`;
     if (this.resources[key]) return null;
 
     this.resources[key] = 'mined';
     this.map.tiles[y][x] = 'grass';
-    this.map.objects = this.map.objects.filter(o => !(o.x === x && o.y === y && o.type === 'rockObj'));
-    return this.rng() < 0.2 ? 'gem' : 'stone';
+    this.map.objects = this.map.objects.filter(object => !(object.x === x && object.y === y && object.type === 'rockObj'));
+
+    const gemChance = 0.12 + (toolLevel - 1) * 0.08;
+    return {
+      itemId: this.rng() < gemChance ? 'gem' : 'stone',
+      amount: toolLevel >= 3 ? 2 : 1
+    };
   }
 
-  cutTree(x, y) {
-    const index = this.map.objects.findIndex(o => o.x === x && o.y === y && o.type === 'tree');
+  cutTree(x, y, toolLevel = 1) {
+    const index = this.map.objects.findIndex(object => object.x === x && object.y === y && object.type === 'tree');
     if (index < 0) return null;
+
     const key = `${x},${y}`;
     if (this.resources[key]) return null;
 
     this.resources[key] = 'cut';
     this.map.objects.splice(index, 1);
-    return this.rng() < 0.2 ? 'woodHard' : 'wood';
+
+    const hardChance = 0.12 + (toolLevel - 1) * 0.09;
+    return {
+      itemId: this.rng() < hardChance ? 'woodHard' : 'wood',
+      amount: toolLevel >= 3 ? 2 : 1
+    };
   }
 
   exploreNear(x, y) {
-    for (const o of this.map.objects) {
-      if (!['cave', 'shrine', 'lighthouse', 'pier'].includes(o.type)) continue;
-      if (Math.hypot(o.x - x, o.y - y) >= 2) continue;
-      const id = o.type;
+    for (const object of this.map.objects) {
+      if (!['cave', 'shrine', 'lighthouse', 'pier'].includes(object.type)) continue;
+      if (Math.hypot(object.x - x, object.y - y) >= 2) continue;
+
+      const id = object.type;
       if (this.discovered.has(id)) return null;
+
       this.discovered.add(id);
+      this.state.discovered = [...this.discovered];
+
       return {
         id,
         reward: id === 'cave'

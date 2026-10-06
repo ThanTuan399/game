@@ -8,10 +8,11 @@ export class Player {
     this.dir = 'down';
     this.stamina = 100;
     this.maxStamina = 100;
+    this.energy = 100;
+    this.maxEnergy = 100;
     this.anim = 0;
     this.step = 0;
     this.tool = 'hand';
-    this.energy = 100;
   }
 
   update(dt, input, world) {
@@ -55,6 +56,13 @@ export class Player {
       left: [-1, 0],
       right: [1, 0]
     }[this.dir] || [0, 1];
+
     return { x: x + offset[0], y: y + offset[1] };
+  }
+
+  restoreForNewDay(homeLevel = 1) {
+    this.maxEnergy = 100 + Math.max(0, homeLevel - 1) * 20;
+    this.energy = this.maxEnergy;
+    this.stamina = this.maxStamina;
   }
 }

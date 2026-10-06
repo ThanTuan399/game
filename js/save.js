@@ -1,32 +1,37 @@
-const KEY = 'my_little_hometown_save_v4';
-const LEGACY_KEYS = ['my_little_hometown_save_v3'];
-export const SAVE_VERSION = 4;
+const KEY = 'my_little_hometown_save_v5';
+const LEGACY_KEYS = ['my_little_hometown_save_v4', 'my_little_hometown_save_v3'];
+export const SAVE_VERSION = 5;
 
 function safeParse(raw) {
-  try { return raw ? JSON.parse(raw) : null; } catch { return null; }
+  try {
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
 function normalizeSave(data) {
   if (!data || !data.town) return null;
 
-  if (data.version === SAVE_VERSION && data.state) return data;
-
-  const oldState = data.state || {};
-  return {
+  const state = data.state || {};
+  const normalized = {
     version: SAVE_VERSION,
-    migratedFrom: data.version || 3,
+    migratedFrom: data.version && data.version !== SAVE_VERSION ? data.version : undefined,
+    savedAt: data.savedAt || null,
     town: data.town,
     state: {
-      ...oldState,
-      map: oldState.map || data.map,
-      farm: oldState.farm || data.farm || {},
-      resources: oldState.resources || data.resources || {},
-      animals: oldState.animals ?? data.animals ?? null,
-      npcs: oldState.npcs || data.npcs || null,
-      discovered: oldState.discovered || data.discovered || [],
-      player: oldState.player || data.player || null
+      ...state,
+      map: state.map || data.map,
+      farm: state.farm || data.farm || {},
+      resources: state.resources || data.resources || {},
+      animals: state.animals ?? data.animals ?? null,
+      npcs: state.npcs || data.npcs || null,
+      discovered: state.discovered || data.discovered || [],
+      player: state.player || data.player || null
     }
   };
+
+  return normalized;
 }
 
 export function saveGame(game) {
@@ -47,11 +52,14 @@ export function saveGame(game) {
         y: game.player.y,
         dir: game.player.dir,
         stamina: game.player.stamina,
+        maxStamina: game.player.maxStamina,
         energy: game.player.energy,
+        maxEnergy: game.player.maxEnergy,
         tool: game.player.tool
       }
     }
   };
+
   localStorage.setItem(KEY, JSON.stringify(payload));
   return true;
 }
@@ -62,11 +70,12 @@ export function loadGame() {
 
   for (const legacyKey of LEGACY_KEYS) {
     const legacy = normalizeSave(safeParse(localStorage.getItem(legacyKey)));
-    if (legacy) {
-      localStorage.setItem(KEY, JSON.stringify(legacy));
-      return legacy;
-    }
+    if (!legacy) continue;
+
+    localStorage.setItem(KEY, JSON.stringify(legacy));
+    return legacy;
   }
+
   return null;
 }
 

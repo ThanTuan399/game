@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Little Hometown — Full Edition</title>
+  <meta name="theme-color" content="#27563a" />
+  <title>My Little Hometown</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,12 +14,14 @@
         <div class="title-kicker">MY LITTLE</div>
         <h1>HOMETOWN</h1>
         <p>Một quê hương nhỏ. Một cuộc sống do chính bạn tạo nên.</p>
+
         <div class="menu-card">
           <button id="newGameBtn" class="big-btn">🌾 NEW GAME</button>
           <button id="continueBtn" class="big-btn secondary">▶ CONTINUE</button>
           <button id="settingsBtn" class="text-btn">⚙ SETTINGS</button>
         </div>
       </div>
+
       <div class="menu-hill hill-a"></div>
       <div class="menu-hill hill-b"></div>
       <div class="menu-fireflies"></div>
@@ -30,19 +33,30 @@
           <span>✦ CHỌN QUÊ HƯƠNG ✦</span>
           <button id="backMenuBtn" class="close-btn">×</button>
         </div>
+
         <div class="create-grid">
           <section class="panel">
             <h2>Thông tin</h2>
-            <label>Tên nhân vật<input id="playerName" maxlength="18" value="Minh" /></label>
-            <label>Tên thị trấn<input id="townName" maxlength="24" value="Bình An" /></label>
-            <label>Seed thế giới<input id="seedInput" maxlength="12" value="738421" /></label>
+            <label>Tên nhân vật
+              <input id="playerName" maxlength="18" value="Minh" />
+            </label>
+            <label>Tên thị trấn
+              <input id="townName" maxlength="24" value="Bình An" />
+            </label>
+            <label>Seed thế giới
+              <input id="seedInput" maxlength="12" value="738421" />
+            </label>
             <button id="randomTownBtn" class="wide-btn">🎲 TẠO THỊ TRẤN NGẪU NHIÊN</button>
           </section>
+
           <section class="panel">
             <h2>Địa hình</h2>
             <div id="biomeCards" class="biome-cards"></div>
-            <label>Phong cách<select id="styleSelect"></select></label>
+            <label>Phong cách
+              <select id="styleSelect"></select>
+            </label>
           </section>
+
           <section class="panel preview-panel">
             <h2>Xem trước thế giới</h2>
             <canvas id="previewCanvas" width="420" height="240"></canvas>
@@ -55,18 +69,25 @@
 
     <div id="gameScreen" class="screen">
       <canvas id="gameCanvas" width="960" height="540"></canvas>
+
       <div class="hud-top">
         <div class="hud-chip"><span id="townHud">Bình An</span></div>
         <div class="hud-chip"><span id="dateHud">Ngày 1 · Xuân</span></div>
         <div class="hud-chip"><span id="timeHud">06:00</span></div>
         <div class="hud-chip weather-chip"><span id="weatherHud">☀ Nắng</span></div>
-        <div class="hud-chip money-chip">💰 <span id="moneyHud">500</span></div>
+        <div class="hud-chip status-chip"><span id="energyHud">⚡ 100/100</span></div>
+        <div class="hud-chip status-chip"><span id="staminaHud">🏃 100</span></div>
+        <div class="hud-chip progress-chip"><span id="reputationHud">⭐ 0</span></div>
+        <div class="hud-chip progress-chip"><span id="levelHud">🏘 Cấp 1</span></div>
+        <div class="hud-chip money-chip">💰 <span id="moneyHud">350</span></div>
         <button id="fullscreenBtn" class="hud-chip fullscreen-btn" title="Toàn màn hình">⛶</button>
       </div>
 
       <div class="hud-bottom">
         <div id="toolBar" class="toolbar"></div>
-        <div class="hint">WASD di chuyển · SHIFT chạy · 1–0 chọn công cụ · SPACE dùng công cụ · E tương tác · I túi · M bản đồ · Q nhiệm vụ · F lưu · ESC menu</div>
+        <div class="hint">
+          WASD di chuyển · SHIFT chạy · 1–0 chọn công cụ · SPACE dùng · E tương tác · I túi · M bản đồ · J sổ tay · Q nhiệm vụ · F lưu
+        </div>
       </div>
 
       <div id="dialogueBox" class="overlay-box hidden">
@@ -76,7 +97,7 @@
       </div>
 
       <div id="shopBox" class="overlay-box hidden large-box">
-        <div class="overlay-title">🧺 CỬA HÀNG</div>
+        <div class="overlay-title">🧺 CHỢ THỊ TRẤN</div>
         <div id="shopItems" class="shop-items"></div>
         <button id="shopClose" class="text-btn">Đóng</button>
       </div>
@@ -87,6 +108,24 @@
         <button id="inventoryClose" class="text-btn">Đóng</button>
       </div>
 
+      <div id="journalBox" class="overlay-box hidden large-box journal-box">
+        <div class="overlay-title">📖 SỔ TAY QUÊ HƯƠNG</div>
+        <div id="journalContent"></div>
+        <button id="journalClose" class="text-btn">Đóng</button>
+      </div>
+
+      <div id="homeBox" class="overlay-box hidden large-box">
+        <div class="overlay-title">🏠 NHÀ CỦA BẠN</div>
+        <div id="homeContent"></div>
+        <button id="homeClose" class="text-btn">Đóng</button>
+      </div>
+
+      <div id="workshopBox" class="overlay-box hidden large-box">
+        <div class="overlay-title">🔨 XƯỞNG NÂNG CẤP</div>
+        <div id="workshopItems" class="shop-items"></div>
+        <button id="workshopClose" class="text-btn">Đóng</button>
+      </div>
+
       <div id="mapOverlay" class="map-overlay hidden">
         <div class="map-window">
           <div class="overlay-title">🗺 BẢN ĐỒ THỊ TRẤN</div>
@@ -94,17 +133,31 @@
           <button id="mapClose" class="text-btn">Đóng</button>
         </div>
       </div>
+
       <div id="toast" class="toast"></div>
     </div>
 
     <div id="settingsBox" class="overlay-box hidden large-box settings-global">
       <div class="overlay-title">⚙ CÀI ĐẶT</div>
-      <label class="setting-line">Âm thanh <input type="checkbox" id="soundToggle" checked /></label>
-      <label class="setting-line">Màn hình rung <input type="checkbox" id="shakeToggle" checked /></label>
-      <p class="settings-note">Các tùy chọn được lưu trên trình duyệt và là điểm mở rộng cho hệ thống audio/feedback sau này.</p>
+
+      <label class="setting-line">
+        Âm thanh
+        <input type="checkbox" id="soundToggle" checked />
+      </label>
+
+      <label class="setting-line">
+        Rung màn hình
+        <input type="checkbox" id="shakeToggle" checked />
+      </label>
+
+      <p class="settings-note">
+        Game tự lưu mỗi 60 giây, khi ngủ và khi quay về menu.
+      </p>
+
       <button id="settingsClose" class="text-btn">Đóng & lưu</button>
     </div>
   </div>
+
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

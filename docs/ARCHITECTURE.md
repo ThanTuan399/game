@@ -1,136 +1,76 @@
-# Kiến trúc My Little Hometown
+# Kiến trúc My Little Hometown — Full Playable v1
 
-## 1. Luồng chính
+## Luồng chính
 
 ```text
 index.html
-   ↓
-main.js  ─────────────── UI / menu / overlay
-   ↓
-Game (game.js)
-   ├── Input
-   ├── Player
-   ├── World
-   │    └── MapGenerator
-   ├── NPC / Animals
-   ├── Renderer
-   ├── Save
-   ├── Content registry
-   └── EventBus
+  → main.js (UI/overlay)
+  → Game
+      ├─ Input / Player
+      ├─ World / MapGenerator
+      ├─ NPC / Animals
+      ├─ Renderer
+      ├─ Content registry
+      ├─ Progression
+      ├─ EventBus
+      └─ Save
 ```
 
-`Game` là orchestrator. Module khác không nên tự sửa DOM trực tiếp. UI đi qua object `ui` từ `main.js`.
+`game.js` điều phối gameplay. `renderer.js` chỉ render. `main.js` quản lý DOM.
 
-## 2. Content registry
-
-`js/content.js` là source of truth runtime cho:
-
-- crop
-- item
-- tool
-- shop stock
-- quest
-
-Khi thêm cây trồng mới, ưu tiên thêm metadata tại đây rồi để `World`/`Game` đọc metadata thay vì thêm `if/else` giá bán ở nhiều nơi.
-
-Ví dụ:
-
-```js
-CROP_DEFS.tomato = {
-  name: 'Cà chua',
-  icon: '🍅',
-  growDays: 5,
-  sell: 16,
-  seedItem: 'seed_tomato'
-};
-```
-
-Sau đó thêm seed tương ứng vào `ITEM_DEFS`, `TOOL_DEFS` và `SHOP_STOCK` nếu muốn người chơi mua/gieo được.
-
-## 3. EventBus
-
-`js/events.js` giúp feature mới nghe sự kiện mà không sửa sâu vào core loop.
-
-Các event hiện đã emit:
-
-- `game:started`
-- `game:saved`
-- `day:started`
-- `item:collected`
-- `money:changed`
-- `crop:harvested`
-- `fish:caught`
-- `npc:interacted`
-- `quest:completed`
-- `exploration:discovered`
-
-Ví dụ achievement system tương lai:
-
-```js
-game.events.on('fish:caught', ({ itemId }) => {
-  // tăng tiến độ achievement câu cá
-});
-```
-
-## 4. Save
-
-Save hiện là schema v4:
+## Chuỗi logic
 
 ```text
-version
-savedAt
-town
-state
-  ├── player
-  ├── inventory
-  ├── farm
-  ├── resources
-  ├── animals
-  ├── npcs
-  ├── discovered
-  └── map
+Input → Game.handleActions → World mutation
+      → Inventory/Stats → EventBus
+      → Daily goals/Achievement/Reputation
+      → Unlock/Upgrade → Save → Renderer
 ```
 
-`save.js` có migration từ key v3. Khi đổi schema sau này, không ghi đè logic cũ một cách phá save; hãy thêm migration theo version.
-
-## 5. Quy tắc mở rộng gameplay
-
-- `main.js`: chỉ UI/bootstrap.
-- `game.js`: điều phối gameplay, input action, progression/economy.
-- `world.js`: state và thao tác lên thế giới/tile/object.
-- `renderer.js`: chỉ render, tránh nhét rule gameplay vào đây.
-- `content.js`: dữ liệu cân bằng và metadata.
-- `npc.js`: AI/lịch/hội thoại NPC.
-- `save.js`: persistence/migration.
-
-Nếu một feature lớn lên đáng kể, tách thành `js/systems/<feature>.js` thay vì làm `game.js` phình quá lớn.
-
-## 6. Các system nên tách tiếp
-
-Khi phát triển tiếp, cấu trúc mục tiêu có thể là:
+Ngày mới:
 
 ```text
-js/systems/
-├── farming.js
-├── economy.js
-├── quests.js
-├── relationships.js
-├── crafting.js
-├── housing.js
-├── festivals.js
-└── achievements.js
+Ngủ hoặc quá 24:00
+ → day++
+ → season/weather
+ → crop growth
+ → hồi energy/stamina
+ → về nhà
+ → tạo daily goals
+ → market modifier
+ → autosave
 ```
 
-Không cần tách sớm nếu logic còn ngắn; chỉ tách khi module có state/rule độc lập rõ ràng.
+## Progression
 
-## 7. Backend trong tương lai
+- Cấp 1: 0 reputation
+- Cấp 2: 40
+- Cấp 3: 100
+- Cấp 4: 220
+- Cấp 5: 400
 
-Game hiện offline-first. Nếu thêm backend, giữ LocalStorage làm cache/offline save và thêm adapter:
+Mục tiêu chính: cấp 5 + 8 quest + nhà cấp 2.
+
+## Save v5
+
+State lưu player, inventory, farm, resources, animals, NPC, discovered, quest, daily goals, reputation, town level, tool levels, home level, stats, achievements, story và map.
+
+Migration hỗ trợ save v3/v4.
+
+## Backend tương lai
+
+Core game offline-first. Nếu thêm backend, dùng adapter thay vì gọi API trực tiếp từ gameplay:
 
 ```text
 SaveService
-├── LocalSaveAdapter
-└── CloudSaveAdapter
+├─ LocalSaveAdapter
+└─ CloudSaveAdapter
 ```
 
-Như vậy gameplay không cần phụ thuộc trực tiếp vào API.
+## Mở rộng system
+
+Feature lớn nên tách dưới `js/systems/`, ví dụ crafting, relationships, festivals, housing, achievements.
+
+## CI
+
+`npm test` kiểm tra syntax JS, import nội bộ, HTML id và encoding. GitHub Actions chạy smoke test trên pull request và main.

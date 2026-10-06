@@ -1,124 +1,103 @@
 # 🌾 My Little Hometown
 
-**My Little Hometown** là prototype game 2D top-down mô phỏng cuộc sống/nông trại chạy trực tiếp trên trình duyệt bằng **HTML5 + CSS3 + JavaScript ES Modules + Canvas 2D + LocalStorage**. Không cần backend để chơi bản hiện tại.
+**My Little Hometown** là game web 2D top-down mô phỏng cuộc sống/nông trại chạy trực tiếp trên trình duyệt bằng **HTML5 + CSS3 + JavaScript ES Modules + Canvas 2D + LocalStorage**.
 
-Bản này tập trung vào hai mục tiêu:
+Bản **Full Playable v1** không chỉ là giao diện. Nó có vòng chơi hoàn chỉnh, progression dài hạn, mục tiêu chính có thể hoàn thành và chế độ chơi tự do sau đoạn kết.
 
-1. Làm cho toàn bộ vòng chơi đang có trên giao diện hoạt động đồng bộ và có thể chơi liên tục.
-2. Tách dữ liệu/gameplay thành các module rõ ràng để dễ bổ sung crafting, nhà cửa, hội thoại, event, combat nhẹ, backend/cloud-save hoặc asset sprite về sau.
+## Chuỗi chơi hoàn chỉnh
 
-## Chạy game
+```text
+Tạo quê hương
+  → làm nông / câu cá / khai thác / trò chuyện
+  → kiếm vật phẩm + mục tiêu ngày
+  → bán hàng / làm nhiệm vụ
+  → tiền + danh tiếng
+  → nâng công cụ + nhà
+  → mở khóa hàng hóa
+  → ngủ sang ngày mới
+  → mùa / thời tiết / giá chợ thay đổi
+  → đưa thị trấn lên cấp 5
+  → hoàn thành mục tiêu chính
+  → free-play
+```
 
-Không mở trực tiếp bằng `file:///...` vì ES Modules cần HTTP server.
+## Gameplay hiện có
 
-Có thể dùng một trong các cách:
+- Map procedural theo seed và biome.
+- Nông trại: cuốc → gieo → tưới/bón phân → ngủ → tăng trưởng → thu hoạch.
+- Mùa giới hạn cây có thể gieo.
+- Energy làm việc và stamina chạy tách riêng.
+- Ngủ tại nhà để sang ngày mới; quá nửa đêm sẽ tự được đưa về nhà.
+- Chợ có giờ mở cửa, stock mở theo cấp thị trấn và bonus giá theo ngày hội.
+- Câu cá, chặt cây, khai thác đá.
+- Xưởng nâng cấp cuốc, bình tưới, rìu, cuốc đá, cần câu tới cấp 3.
+- Nhà nâng cấp tới cấp 3 và tăng energy tối đa.
+- NPC có nghề, lịch di chuyển, hội thoại và friendship theo ngày.
+- Chuỗi 8 nhiệm vụ chính, 2 mục tiêu ngẫu nhiên mỗi ngày.
+- Danh tiếng và 5 cấp phát triển thị trấn.
+- Thành tựu có thưởng.
+- Khám phá hang, miếu, hải đăng, bến thuyền.
+- Save/Continue, autosave, migration save cũ.
+- Sổ tay phím J hiển thị quest, daily goals, stats, achievement và tiến trình cốt truyện.
 
-- VS Code + Live Server.
-- Python: `python -m http.server 5500` rồi mở `http://localhost:5500`.
-- Bất kỳ static web server nào.
+## Mục tiêu chính
+
+Hoàn thành một lượt chơi khi:
+
+1. Thị trấn đạt **cấp 5**.
+2. Hoàn thành ít nhất **8 nhiệm vụ**.
+3. Nhà đạt ít nhất **cấp 2**.
+
+Sau đó game mở đoạn kết và chuyển sang free-play, không xóa save.
 
 ## Điều khiển
 
 | Phím | Chức năng |
 |---|---|
-| WASD / phím mũi tên | Di chuyển |
+| WASD / mũi tên | Di chuyển |
 | SHIFT | Chạy |
-| 1 | Cuốc đất |
-| 2 | Gieo lúa |
-| 3 | Gieo ngô |
-| 4 | Gieo cà rốt |
-| 5 | Gieo bí đỏ |
-| 6 | Tưới cây |
-| 7 | Thu hoạch |
-| 8 | Rìu |
-| 9 | Cuốc đá |
-| 0 | Câu cá |
-| SPACE / ENTER | Dùng công cụ vào ô phía trước nhân vật |
-| E | Tương tác NPC / chợ / tòa thị trấn / điểm khám phá |
+| 1–0 | Chọn công cụ |
+| SPACE / ENTER | Dùng công cụ vào ô phía trước |
+| E | Tương tác |
 | I | Túi đồ |
 | M | Bản đồ |
-| Q | Xem / giao nhiệm vụ |
-| F | Lưu game |
-| ESC | Đóng cửa sổ đang mở hoặc về menu |
+| J | Sổ tay |
+| Q | Nhiệm vụ |
+| F | Lưu |
+| ESC | Đóng cửa sổ / về menu |
 
-Có thể chọn **Tay** hoặc **Phân bón** trực tiếp trên thanh công cụ bằng chuột.
+## Chạy game
 
-## Vòng chơi hiện tại
+Không mở bằng `file:///...`. Dùng Live Server hoặc:
 
-- Tạo quê hương bằng `seed`, biome và phong cách.
-- Bản đồ procedural 140×90 tile, có đường, nhà, chợ, nông trại, rừng/sông/biển/núi tùy biome.
-- Di chuyển, chạy, camera, collision.
-- Cuốc → gieo → tưới/bón phân → qua ngày → thu hoạch.
-- Câu cá, chặt cây, khai thác đá.
-- Túi đồ, cửa hàng, mua hạt giống và bán vật phẩm.
-- Chu kỳ ngày/đêm, 4 mùa và thời tiết.
-- NPC có nghề, lịch di chuyển cơ bản, hội thoại và friendship.
-- Bò/gà xuất hiện trong thế giới và có chuyển động.
-- Chuỗi nhiệm vụ cơ bản.
-- Khám phá hang, miếu, hải đăng, bến thuyền và nhận thưởng một lần.
-- Save/Continue bằng LocalStorage, autosave mỗi 60 giây và tự migrate save v3 → v4.
-- Fullscreen, âm thanh feedback đơn giản và rung màn hình khi khai thác.
-
-## Cấu trúc
-
-```text
-.
-├── index.html
-├── style.css
-├── README.md
-├── docs/
-│   └── ARCHITECTURE.md
-├── js/
-│   ├── main.js           # UI/menu/bootstrap
-│   ├── game.js           # game loop + gameplay orchestration
-│   ├── content.js        # source of truth cho item/crop/tool/quest
-│   ├── events.js         # EventBus cho feature mở rộng
-│   ├── player.js
-│   ├── camera.js
-│   ├── input.js
-│   ├── world.js
-│   ├── townGenerator.js
-│   ├── mapGenerator.js
-│   ├── renderer.js
-│   ├── npc.js
-│   ├── lighting.js
-│   ├── save.js
-│   └── utils.js
-├── data/
-│   ├── towns.json
-│   ├── biomes.json
-│   ├── crops.json
-│   ├── items.json
-│   └── npcs.json
-└── assets/
+```bash
+python -m http.server 5500
 ```
 
-## Các thay đổi quan trọng của playable foundation
+Sau đó mở `http://localhost:5500`.
 
-- Công cụ tác động vào **ô phía trước nhân vật** thay vì ô nhân vật đang đứng, nên rìu/cuốc đá/câu cá hoạt động đúng với collision.
-- Thu hoạch chỉ tạo vật phẩm; tiền chỉ nhận khi bán, loại bỏ lỗi một nông sản được tính tiền hai lần.
-- Cây bị chặt và đá bị khai thác thay đổi trạng thái thế giới ngay lập tức.
-- Động vật được spawn khi tạo world mới.
-- Sửa lịch NPC ban đêm để không tạo tọa độ `NaN`.
-- Bổ sung bí đỏ và phân bón thành gameplay thực sự dùng được.
-- Menu Settings hoạt động ngay từ màn hình chính và lưu cấu hình.
-- Continue chỉ bật khi có save hợp lệ.
-- Pause world khi đang mở hội thoại/shop/inventory/map/settings.
-- Save schema v4 có migration từ save cũ.
-- `content.js` gom item/crop/tool/quest về một chỗ để không phải sửa logic ở nhiều file khi thêm nội dung.
-- `EventBus` tạo điểm móc cho achievement, tutorial, analytics, story trigger hoặc backend trong tương lai.
+Kiểm tra project:
 
-## Hướng phát triển tiếp
+```bash
+npm test
+```
 
-Ưu tiên tiếp theo nên là:
+Smoke test không cần package ngoài.
 
-1. Chuyển toàn bộ content còn hard-code sang data-driven hoàn chỉnh.
-2. Hệ thống nhà/crafting/nâng cấp công cụ.
-3. NPC schedule + relationship event + gift + quest riêng.
-4. Event/lễ hội thực sự thay vì chỉ thông báo.
-5. Fishing/mining mini-game.
-6. Sprite sheet/animation asset pipeline thay cho phần lớn pixel-art vẽ bằng code.
-7. Chunk/culling nâng cao nếu mở rộng map lớn.
-8. Backend tùy chọn cho account, cloud save và leaderboard/co-op nếu cần.
+## Backend
 
-Chi tiết kiến trúc và cách thêm feature nằm trong `docs/ARCHITECTURE.md`.
+Backend **không bắt buộc** cho bản single-player. Luật game, world state, progression và save chạy client-side; đó là game logic chứ không chỉ là UI.
+
+Backend chỉ cần khi muốn thêm account, cloud save, leaderboard, marketplace, co-op/multiplayer hoặc anti-cheat.
+
+## Hướng sau v1
+
+1. Sprite sheet + animation asset pipeline.
+2. Crafting và placement vật thể.
+3. Relationship event/gift/story riêng cho NPC.
+4. Fishing/mining minigame.
+5. Interior nhà/cửa hàng.
+6. Data-driven content hoàn chỉnh.
+7. Nhiều save slot.
+8. Backend account/cloud save.
+9. Co-op nếu muốn chuyển sang online.
