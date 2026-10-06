@@ -2,10 +2,10 @@ import { hashSeed, mulberry32 } from '../utils.js';
 
 export const TOWN_LEVELS = [
   { level: 1, min: 0, title: 'Người mới đến' },
-  { level: 2, min: 50, title: 'Người quen của thị trấn' },
-  { level: 3, min: 150, title: 'Người xây dựng quê hương' },
-  { level: 4, min: 350, title: 'Trụ cột cộng đồng' },
-  { level: 5, min: 700, title: 'Niềm tự hào của quê hương' }
+  { level: 2, min: 40, title: 'Người quen của thị trấn' },
+  { level: 3, min: 100, title: 'Người xây dựng quê hương' },
+  { level: 4, min: 220, title: 'Trụ cột cộng đồng' },
+  { level: 5, min: 400, title: 'Niềm tự hào của quê hương' }
 ];
 
 const DAILY_TEMPLATES = [
