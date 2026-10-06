@@ -153,6 +153,20 @@ export class Game {
     this.last = performance.now();
 
     this.events.emit('game:started', { town: this.town, state: this.state });
+
+    if (!this.state.tutorialSeen) {
+      this.state.tutorialSeen = true;
+      setTimeout(() => {
+        if (!this.running) return;
+        this.ui.showDialogue('🌱 Bắt đầu cuộc sống mới', [
+          'Hãy dùng cuốc, hạt giống và bình tưới để tạo vụ mùa đầu tiên. Công cụ tác động vào ô ngay phía trước nhân vật.',
+          'Bán nông sản ở chợ, làm nhiệm vụ tại Tòa thị trấn và hoàn thành mục tiêu ngày trong Sổ tay (phím J) để tăng danh tiếng.',
+          'Khi hết thể lực hoặc muốn sang ngày mới, hãy trở về nhà và ngủ. Xưởng gần kho nông trại cho phép nâng cấp công cụ.',
+          'Mục tiêu chính: đưa thị trấn lên cấp 5, hoàn thành 8 nhiệm vụ và nâng nhà ít nhất lên cấp 2.'
+        ]);
+      }, 120);
+    }
+
     requestAnimationFrame(time => this.loop(time));
   }
 
