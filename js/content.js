@@ -1,7 +1,7 @@
 export const CROP_DEFS = {
   rice: { name: 'Lúa', icon: '🌾', growDays: 4, sell: 10, seedItem: 'seed_rice', seasons: ['Xuân', 'Hạ'] },
   corn: { name: 'Ngô', icon: '🌽', growDays: 5, sell: 14, seedItem: 'seed_corn', seasons: ['Xuân', 'Hạ', 'Thu'] },
-  carrot: { name: 'Cà rốt', icon: '🥕', growDays: 4, sell: 16, seedItem: 'seed_carrot', seasons: ['Xuân', 'Thu', 'Đông'] },
+  carrot: { name: 'Cà rốt', icon: '🥕', growDays: 4, sell: 16, seedItem: 'seed_carrot', seasons: ['Xuân', 'Hạ', 'Thu', 'Đông'] },
   pumpkin: { name: 'Bí đỏ', icon: '🎃', growDays: 7, sell: 32, seedItem: 'seed_pumpkin', seasons: ['Thu'] }
 };
 
