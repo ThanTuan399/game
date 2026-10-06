@@ -727,6 +727,7 @@ export class Game {
       this.state.story.completed = true;
       this.state.money += 1000;
       this.state.stats.moneyEarned += 1000;
+      this.ui.closeAllOverlays?.();
       this.ui.showDialogue('🌟 Lễ hội Quê Hương', [
         `${this.town.name} đã thay đổi nhờ những việc bạn làm mỗi ngày.`,
         'Người dân tổ chức một lễ hội để cảm ơn bạn. Mục tiêu chính của bản chơi đã hoàn thành.',
