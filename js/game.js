@@ -483,15 +483,16 @@ export class Game {
     }
 
     if (this.activeTool === 'harvest') {
-      const cropId = this.world.harvestFarm(x, y);
+      const farm = this.world.farm[`${x},${y}`];
 
-      if (!cropId) {
+      if (!farm || farm.growth < farm.maxGrowth) {
         this.toast('🧺 Chưa có cây chín ở ô phía trước.');
         return;
       }
 
       if (!this.consumeEnergy('harvest')) return;
 
+      const cropId = this.world.harvestFarm(x, y);
       const itemId = `crop_${cropId}`;
       this.collect(itemId);
       this.state.stats.harvested += 1;
