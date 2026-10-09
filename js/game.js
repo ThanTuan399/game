@@ -17,6 +17,7 @@ import {
   nextQuestId
 } from './content.js';
 import { EventBus } from './events.js';
+import { GameLoop } from './core/gameLoop.js';
 import {
   addReputation,
   canAfford,
@@ -74,9 +75,12 @@ export class Game {
     this.input = new Input(canvas);
     this.camera = new Camera();
     this.events = new EventBus();
+    this.gameLoop = new GameLoop({
+      update: dt => this.update(dt),
+      render: dt => this.render(dt)
+    });
 
     this.running = false;
-    this.last = 0;
     this.effects = [];
     this.activeTool = 'hand';
     this.autosaveElapsed = 0;
@@ -150,7 +154,6 @@ export class Game {
     this.running = true;
     this.ui.showGame();
     this.refreshHUD();
-    this.last = performance.now();
 
     this.events.emit('game:started', { town: this.town, state: this.state });
 
@@ -167,7 +170,7 @@ export class Game {
       }, 120);
     }
 
-    requestAnimationFrame(time => this.loop(time));
+    this.gameLoop.start();
   }
 
   bindInternalEvents() {
@@ -194,17 +197,6 @@ export class Game {
     ));
   }
 
-  loop(timestamp) {
-    if (!this.running) return;
-
-    const dt = Math.min(0.05, (timestamp - this.last) / 1000);
-    this.last = timestamp;
-
-    this.update(dt);
-    this.render();
-
-    requestAnimationFrame(time => this.loop(time));
-  }
 
   update(dt) {
     if (this.ui.isBlocking?.()) {
@@ -311,6 +303,7 @@ export class Game {
     if (this.input.consume('Escape')) {
       this.save(true);
       this.running = false;
+      this.gameLoop.stop();
       this.ui.showMenu();
       return;
     }
@@ -919,13 +912,13 @@ export class Game {
     if (this.shake) this.shakeTime = Math.max(this.shakeTime, duration);
   }
 
-  render() {
+  render(dt = 1 / 60) {
     if (this.shakeTime <= 0) {
       this.renderer.draw(this);
       return;
     }
 
-    this.shakeTime = Math.max(0, this.shakeTime - 1 / 60);
+    this.shakeTime = Math.max(0, this.shakeTime - dt);
 
     const offsetX = (Math.random() - 0.5) * 5;
     const offsetY = (Math.random() - 0.5) * 5;
