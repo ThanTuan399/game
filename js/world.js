@@ -1,6 +1,10 @@
 import { MapGenerator } from './mapGenerator.js';
 import { mulberry32, hashSeed, weightedPick } from './utils.js';
 import { getCropDef } from './content.js';
+import {
+  canWalk as canWalkAt,
+  hasBlockingObjectAt as hasBlockingAt
+} from './world/collision.js';
 
 export const SEASONS = ['Xuân', 'Hạ', 'Thu', 'Đông'];
 export const WEATHER = ['sunny', 'cloudy', 'rain', 'heavyRain', 'fog', 'wind', 'storm'];
@@ -90,30 +94,11 @@ export class World {
   }
 
   hasBlockingObjectAt(x, y) {
-    const blockedTypes = [
-      'tree', 'rockObj', 'house', 'woodHouse', 'townhall',
-      'market', 'cafe', 'playerHouse', 'barn', 'cave',
-      'shrine', 'lighthouse'
-    ];
-    return this.map.objects.some(object => object.x === x && object.y === y && blockedTypes.includes(object.type));
+    return hasBlockingAt(this, x, y);
   }
 
-  canWalk(x, y) {
-    if (x < 1 || y < 1 || x >= this.width - 1 || y >= this.height - 1) return false;
-    const tile = this.map.tiles[Math.floor(y)]?.[Math.floor(x)];
-    if (!tile || ['water', 'rock'].includes(tile)) return false;
-
-    const blockedTypes = [
-      'tree', 'rockObj', 'house', 'woodHouse', 'townhall',
-      'market', 'cafe', 'playerHouse', 'barn', 'cave',
-      'shrine', 'lighthouse'
-    ];
-
-    for (const object of this.map.objects) {
-      if (!blockedTypes.includes(object.type)) continue;
-      if (Math.abs(object.x + 0.5 - x) < 0.55 && Math.abs(object.y + 0.5 - y) < 0.55) return false;
-    }
-    return true;
+  canWalk(x, y, options) {
+    return canWalkAt(this, x, y, options);
   }
 
   getObjectNear(x, y, radius = 1.6) {
