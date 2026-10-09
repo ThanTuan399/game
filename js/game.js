@@ -1,8 +1,9 @@
-import { Player } from './player.js';
-import { Camera } from './camera.js';
-import { Input } from './input.js';
-import { World, SEASONS } from './world.js';
-import { Renderer } from './renderer.js';
+import { GameLoop } from './core/gameLoop.js';
+import { Input } from './core/input.js';
+import { Camera } from './core/camera.js';
+import { Player } from './entities/player.js';
+import { World, SEASONS } from './world/world.js';
+import { Renderer } from './rendering/renderer.js';
 import { drawLighting } from './lighting.js';
 import { updateNPCs, interactNPC, updateAnimals } from './npc.js';
 import { saveGame } from './save.js';
@@ -76,7 +77,6 @@ export class Game {
     this.events = new EventBus();
 
     this.running = false;
-    this.last = 0;
     this.effects = [];
     this.activeTool = 'hand';
     this.autosaveElapsed = 0;
@@ -85,6 +85,11 @@ export class Game {
 
     this.sound = localStorage.getItem('mlh_sound') !== '0';
     this.shake = localStorage.getItem('mlh_shake') !== '0';
+
+    this.gameLoop = new GameLoop({
+      update: dt => this.update(dt),
+      render: () => this.render()
+    });
 
     this.ui.toolButtons.forEach(button => {
       button.addEventListener('click', () => this.setTool(button.dataset.tool));
@@ -150,7 +155,6 @@ export class Game {
     this.running = true;
     this.ui.showGame();
     this.refreshHUD();
-    this.last = performance.now();
 
     this.events.emit('game:started', { town: this.town, state: this.state });
 
@@ -167,7 +171,7 @@ export class Game {
       }, 120);
     }
 
-    requestAnimationFrame(time => this.loop(time));
+    this.gameLoop.start();
   }
 
   bindInternalEvents() {
@@ -194,16 +198,9 @@ export class Game {
     ));
   }
 
-  loop(timestamp) {
-    if (!this.running) return;
-
-    const dt = Math.min(0.05, (timestamp - this.last) / 1000);
-    this.last = timestamp;
-
-    this.update(dt);
-    this.render();
-
-    requestAnimationFrame(time => this.loop(time));
+  stop() {
+    this.running = false;
+    this.gameLoop.stop();
   }
 
   update(dt) {
@@ -310,7 +307,7 @@ export class Game {
   handleActions() {
     if (this.input.consume('Escape')) {
       this.save(true);
-      this.running = false;
+      this.stop();
       this.ui.showMenu();
       return;
     }
