@@ -51,8 +51,8 @@ export function updateNPCs(world, dt) {
     const nextX = npc.x + dx * dt * speed;
     const nextY = npc.y + dy * dt * speed;
 
-    if (world.canWalk(nextX, npc.y)) npc.x = nextX;
-    if (world.canWalk(npc.x, nextY)) npc.y = nextY;
+    if (world.canWalk(nextX, npc.y, { ignoreEntityId: npc.id })) npc.x = nextX;
+    if (world.canWalk(npc.x, nextY, { ignoreEntityId: npc.id })) npc.y = nextY;
 
     npc.dir = Math.abs(dx) > Math.abs(dy)
       ? (dx > 0 ? 'right' : 'left')
@@ -148,7 +148,7 @@ export function updateAnimals(world, dt) {
     const dx = Math.cos(angle) * 0.35;
     const dy = Math.sin(angle) * 0.35;
 
-    if (world.canWalk(animal.x + dx, animal.y + dy)) {
+    if (world.canWalk(animal.x + dx, animal.y + dy, { ignoreEntityId: animal.id })) {
       animal.x += dx;
       animal.y += dy;
     }
